@@ -83,10 +83,21 @@ EOF
 
 echo "Compiz configuration written to $COMPIZ_PROFILE_DIR/Default.ini"
 
-# Restart Compiz to apply settings
-echo "Restarting Compiz..."
-setsid compiz --replace & disown
-sleep 3
+# Safer approach: inform the user to restart the session manually
+echo
+echo "-------------------------------------------------------------"
+echo "Compiz and Unity settings have been applied."
+echo "To activate visual effects safely, please log out and log in again."
+echo "If you prefer an automatic reload, you can run:"
+echo
+echo "   sudo systemctl restart lightdm"
+echo
+echo "This will restart the Unity session cleanly."
+echo "-------------------------------------------------------------"
+echo
+echo "Press ENTER to exit this installer."
+read
+
 
 # ------------------------------------------------------------------------------
 # 5. Restore panel color and Ambiance window decorations
