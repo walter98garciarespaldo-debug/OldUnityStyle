@@ -14,7 +14,7 @@ echo
 # ------------------------------------------------------------------------------
 # 1. Install required packages
 # ------------------------------------------------------------------------------
-echo "[1/5] Installing packages..."
+echo "[1/6] Installing packages..."
 sudo apt update
 sudo apt install -y \
     humanity-icon-theme \
@@ -31,7 +31,7 @@ sudo apt install -y \
 # ------------------------------------------------------------------------------
 # 2. Apply GTK, icon, and window themes
 # ------------------------------------------------------------------------------
-echo "[2/5] Applying Ambiance and Humanity themes..."
+echo "[2/6] Applying Ambiance and Humanity themes..."
 
 gsettings set org.gnome.desktop.interface gtk-theme 'Ambiance'
 gsettings set org.gnome.desktop.interface icon-theme 'Humanity'
@@ -42,17 +42,17 @@ gsettings set org.gnome.desktop.interface font-name 'Ubuntu 11'
 # ------------------------------------------------------------------------------
 # 3. Configure Unity Launcher
 # ------------------------------------------------------------------------------
-echo "[3/5] Configuring Unity Launcher..."
+echo "[3/6] Configuring Unity Launcher..."
 
-# Note: some keys may not exist in Unity 7.7; ignored if not found
+# Some keys may not exist in Unity 7.7; ignore errors if they do not
 gsettings set com.canonical.Unity.Launcher launcher-position 'Left' || true
 gsettings set com.canonical.Unity.Launcher icon-size 48 || true
 gsettings set com.canonical.Unity.Launcher minimize-on-click true || true
 
 # ------------------------------------------------------------------------------
-# 4. Configure Compiz effects (via gconftool-2 fallback or ccsm profile)
+# 4. Configure Compiz effects
 # ------------------------------------------------------------------------------
-echo "[4/5] Enabling Compiz visual effects..."
+echo "[4/6] Enabling Compiz visual effects..."
 
 # Backup current Compiz profile if present
 mkdir -p ~/.config/compiz
@@ -60,8 +60,6 @@ if [ -f ~/.config/compiz/compizconfig/Default.ini ]; then
     cp ~/.config/compiz/compizconfig/Default.ini ~/.config/compiz/compizconfig/Default.ini.bak
 fi
 
-# Enable wobbly windows and minimize animation using compizconfig
-# For modern systems, this can be safely forced using ccsm schema
 COMPIZ_PROFILE_DIR="$HOME/.config/compiz-1/compizconfig"
 mkdir -p "$COMPIZ_PROFILE_DIR"
 
@@ -83,12 +81,46 @@ EOF
 
 echo "Compiz configuration written to $COMPIZ_PROFILE_DIR/Default.ini"
 
-# Safer approach: inform the user to restart the session manually
+# ------------------------------------------------------------------------------
+# 5. Force panel appearance and opacity
+# ------------------------------------------------------------------------------
+echo "[5/6] Setting panel opacity and color..."
+
+# Force panel opacity to 0.1 for subtle transparency
+dconf write /org/compiz/profiles/unity/plugins/unityshell/panel-opacity 1.0
+
+# Create or update a local GTK override to ensure consistent panel color
+mkdir -p ~/.config/gtk-3.0
+cat > ~/.config/gtk-3.0/gtk.css <<'EOCSS'
+/* Solid yet translucent panel color for Unity */
+UnityPanelWidget,
+.unity-panel,
+#Panel,
+#unity-panel,
+#panel,
+.PanelApplet {
+  background-image: none;
+  background-color: #2C001E;  /* Classic Ubuntu brownish tone */
+  color: #ffffff;
+}
+EOCSS
+
+# Refresh window decorations
+gtk-window-decorator --replace & disown
+
+# ------------------------------------------------------------------------------
+# 6. Finish up
+# ------------------------------------------------------------------------------
+echo "[6/6] Finalizing..."
+
 echo
 echo "-------------------------------------------------------------"
-echo "Compiz and Unity settings have been applied."
+echo "All Compiz and Unity settings have been applied."
+echo "Panel opacity set to 0.1 (light transparency)."
+echo "A GTK override has been created at ~/.config/gtk-3.0/gtk.css"
+echo
 echo "To activate visual effects safely, please log out and log in again."
-echo "If you prefer an automatic reload, you can run:"
+echo "If you prefer an immediate reload, run:"
 echo
 echo "   sudo systemctl restart lightdm"
 echo
@@ -97,20 +129,3 @@ echo "-------------------------------------------------------------"
 echo
 echo "Press ENTER to exit this installer."
 read
-
-
-# ------------------------------------------------------------------------------
-# 5. Restore panel color and Ambiance window decorations
-# ------------------------------------------------------------------------------
-echo "[5/5] Restoring Ambiance top panel color..."
-
-# Unity automatically uses Ambiance for top panel; just ensure applied
-gsettings set org.gnome.desktop.interface gtk-theme 'Ambiance'
-
-# ------------------------------------------------------------------------------
-# Done
-# ------------------------------------------------------------------------------
-echo
-echo "All steps completed successfully."
-echo "You can log out and log back in to fully reload Unity and Compiz."
-echo "Backup of previous Compiz config saved (if existed)."
